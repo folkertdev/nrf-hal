@@ -129,36 +129,37 @@ where
             self.0.tasks_stoptx.write(|w| unsafe { w.bits(1) });
         }
 
-        // NB Safety: This is taken from Nordic's driver -
-        // https://github.com/NordicSemiconductor/nrfx/blob/master/drivers/src/nrfx_uarte.c#L197
-        if unsafe { core::ptr::read_volatile(rxenable_reg) } == 1 {
-            self.0.enable.write(|w| w.enable().enabled());
-            self.0.tasks_stoprx.write(|w| unsafe { w.bits(1) });
-
-            let mut workaround_succeded = false;
-            // The UARTE is able to receive up to four bytes after the STOPRX task has been triggered.
-            // On lowest supported baud rate (1200 baud), with parity bit and two stop bits configured
-            // (resulting in 12 bits per data byte sent), this may take up to 40 ms.
-            for _ in 0..40000 {
-                // NB Safety: This is taken from Nordic's driver -
-                // https://github.com/NordicSemiconductor/nrfx/blob/master/drivers/src/nrfx_uarte.c#L197
-                if unsafe { core::ptr::read_volatile(rxenable_reg) } == 0 {
-                    workaround_succeded = true;
-                    break;
-                } else {
-                    // Need to sleep for 1us here
-                }
-            }
-
-            if !workaround_succeded {
-                panic!("Failed to apply workaround for UART");
-            }
-
-            let errors = self.0.errorsrc.read().bits();
-            // NB Safety: safe to write back the bits we just read to clear them
-            self.0.errorsrc.write(|w| unsafe { w.bits(errors) });
-            self.0.enable.write(|w| w.enable().disabled());
-        }
+        // Commented out to enable turning uarte on/off again, see https://github.com/nrf-rs/nrf-hal/issues/381
+        //        // NB Safety: This is taken from Nordic's driver -
+        //        // https://github.com/NordicSemiconductor/nrfx/blob/master/drivers/src/nrfx_uarte.c#L197
+        //        if unsafe { core::ptr::read_volatile(rxenable_reg) } == 1 {
+        //            self.0.enable.write(|w| w.enable().enabled());
+        //            self.0.tasks_stoprx.write(|w| unsafe { w.bits(1) });
+        //
+        //            let mut workaround_succeded = false;
+        //            // The UARTE is able to receive up to four bytes after the STOPRX task has been triggered.
+        //            // On lowest supported baud rate (1200 baud), with parity bit and two stop bits configured
+        //            // (resulting in 12 bits per data byte sent), this may take up to 40 ms.
+        //            for _ in 0..40000 {
+        //                // NB Safety: This is taken from Nordic's driver -
+        //                // https://github.com/NordicSemiconductor/nrfx/blob/master/drivers/src/nrfx_uarte.c#L197
+        //                if unsafe { core::ptr::read_volatile(rxenable_reg) } == 0 {
+        //                    workaround_succeded = true;
+        //                    break;
+        //                } else {
+        //                    // Need to sleep for 1us here
+        //                }
+        //            }
+        //
+        //            if !workaround_succeded {
+        //                panic!("Failed to apply workaround for UART");
+        //            }
+        //
+        //            let errors = self.0.errorsrc.read().bits();
+        //            // NB Safety: safe to write back the bits we just read to clear them
+        //            self.0.errorsrc.write(|w| unsafe { w.bits(errors) });
+        //            self.0.enable.write(|w| w.enable().disabled());
+        //        }
     }
 
     /// Write via UARTE.
